@@ -1,29 +1,15 @@
-/*********************************************************************
-** Device: Joystick **
-** File: EF_Joystick_Test.c **
-** **
-** Created by ElecFreaks Robi.W /10 June 2011 **
-** **
-** Description: **
-** This file is a sample code for your reference. **
-** **
-** Copyright (C) 2011 ElecFreaks Corp. **
-*********************************************************************/
+#define MAGIC 0xabbaceca
 
-typedef struct
+typedef struct __attribute__((__packed__))
 {
-	unsigned a		: 1;
-	unsigned b		: 1;
-	unsigned c		: 1;
-	unsigned d		: 1;
-	int x;
-	int y;
+  uint32_t magic;
+  int16_t x;
+  int16_t y;
+  uint8_t buttons;
 }joystick_t;
 
-int FirstShotX , FirstShotY;
+int16_t FirstShotX , FirstShotY;
 joystick_t joystick;
-const int joystick_size = sizeof(joystick);
-char buffer[joystick_size];
 
 void setup()
 {
@@ -32,20 +18,16 @@ void setup()
 		pinMode(i, INPUT);
 		digitalWrite(i, 1);
 	}
-	Serial.begin(9600);
+	Serial.begin(38400);
 	FirstShotX = 0;
 	FirstShotY = 0;
-	//joystick = (joystick_t*)calloc(1, sizeof(joystick_t));
+  	joystick.magic = 0xabbaceca;
 }
 
 void loop(){
-	memset(buffer, 0, joystick_size);
-	joystick.a = 0;
-	joystick.b = 0;
-	joystick.c = 0;
-	joystick.d = 0;
-	joystick.x = 0;
-	joystick.y = 0;
+  	joystick.buttons = 0;
+  	joystick.x = 0;
+  	joystick.y = 0;
 
 	int i, someInt, flag = 0;
 	for(i=2; i<9; i++)
@@ -61,23 +43,24 @@ void loop(){
 	{
 		switch(i)
 		{
+			//TODO figure out button maping!
 			case 2: 
-				joystick.a = 1;
+				joystick.buttons = 1;
 				break;
 			case 3: 
-				joystick.b = 1;
+				joystick.buttons = 1 << 1;
 				break;
 			case 4:
-				joystick.c = 1;
+				joystick.buttons = 1 << 2;
 				break;
 			case 5:
-				joystick.d = 1;
+				joystick.buttons = 1 << 3;
 				break;
 			default: break;
 		}
 		flag=0;
 	}
-	int sensorValue = analogRead(A0);
+	int16_t sensorValue = analogRead(A0);
 	if(FirstShotX == 0)
 	{
 		FirstShotX = sensorValue;
@@ -89,9 +72,10 @@ void loop(){
 		FirstShotY = sensorValue;
 	}
 	joystick.y = sensorValue - FirstShotY;
-	memcpy(buffer, &joystick, sizeof(joystick));
-	Serial.write((char*)(&joystick), sizeof(joystick));
-	//Serial.println(joystick.x);
-	//Serial.println(joystick.y);
-	delay(200);
+	byte* ptr = (byte*)&joystick;
+	for(i = 0; i < sizeof(joystick_t); i++)
+	{
+	    Serial.write(ptr[i]);
+	}
+	//Serial.println(sizeof(joystick_t));
 }

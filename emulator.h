@@ -25,16 +25,6 @@
 #define unpack_rgb333_p32 ((volatile uint32_t*)(LPRS2_GPU_BASE+0xc00000))
 #define joypad_p32 ((volatile uint32_t*)LPRS2_JOYPAD_BASE)
 
-typedef struct
-{
-	unsigned a		: 1;
-	unsigned b		: 1;
-	unsigned c		: 1;
-	unsigned d		: 1;
-	int x;
-	int y;
-}joystick_t;
-
 typedef struct {
 	unsigned a      : 1;
 	unsigned b      : 1;
