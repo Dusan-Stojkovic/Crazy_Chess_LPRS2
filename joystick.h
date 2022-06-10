@@ -40,64 +40,51 @@ int set_interface_attribs (int fd, int speed, int parity)
 	return 0;
 }
 
-void* shield_input(void *p_joy)
+void shield_input(joystick_t* joystick, int device)
 {
-	int device = open("/dev/ttyUSB0", O_RDWR | O_NONBLOCK | O_NOCTTY);
- 	
-	set_interface_attribs (device, B38400, 0);  
-
-	printf("joystick connection open at %i device\n", device);
-	joystick_t* joystick = (joystick_t*)p_joy;
-
-	int minX = 0, maxX = 0;
-	int minY = 0, maxY = 0;
+	tcflush(device, TCIFLUSH);
 
 	int size = sizeof(joystick_t);
 	uint8_t* bits = (uint8_t*)joystick;
-	printf("%i\n", size);
+	uint8_t bit = 0;
+	uint8_t prev_bit = 0;
 
-	while(1)
+	//Magic calculations
+	char magic_size = sizeof(MAGIC);
+	char valid = 0;
+	uint8_t magic_shift = 0;
+	uint32_t shift_mask = 0xff; 
+
+	while(valid != magic_size)
 	{
-		for(int i = 0; i < size; i++)
+		int n = read(device, &bit, 1);
+		//if(bit != 0 && bit != prev_bit)
+		//{
+			//printf("%x\n", bit);
+		if((uint8_t)((MAGIC & shift_mask) >> magic_shift) == bit)
 		{
-			int n = read(device, &(bits[i]), 1);
+			bits[valid] = bit;
+			magic_shift = 8*(++valid);
+			shift_mask = shift_mask << 8;
+			//printf("%i %i %x\n", valid, magic_shift, shift_mask);
+			//printf("%x\n", (uint8_t)((MAGIC & shift_mask) >> magic_shift));
 		}
-		if(joystick->magic != MAGIC)
+		else
 		{
-			//printf("ns : %x\n", joystick.magic);
 			memset(bits, 0, size);
-			continue;
+			valid = 0;
+			magic_shift = 0;
+			shift_mask = 0xff;
 		}
-		//printf("Sync \n");
-		//TODO sync these values now to our main program
-		int a = joystick->buttons & 0x1;
-		int b = (joystick->buttons & 0x2) >> 1;
-		int c = (joystick->buttons & 0x4) >> 2;
-		int d = (joystick->buttons & 0x8) >> 3;
-		printf("%i %i %i %i %i %i\n", a, b, c, d, joystick->x, joystick->y);
-		memset(bits, 0, size);
-		//delay might not be needed
-
-#if DEBUG_EXTREMA
-		if(minX > joystick.x)
-		{
-			minX = joystick.x;
-		}
-		if(minY > joystick.y)
-		{
-			minY = joystick.y;
-		}
-		if(maxX < joystick.x)
-		{
-			maxX = joystick.x;
-
-		}
-		if(maxY < joystick.y)
-		{
-			maxY = joystick.y;
-		}
-		printf("extrema X: %i %i\nextrema Y: %i %i\n", minX, maxX, minY, maxY);
-#endif
+		//}
+		//prev_bit = bit;
+	}
+	//Valid data get rest 
+	int i;
+	for(i = 0; i < size - magic_size; i++)
+	{
+		int n = read(device, &bit, 1);
+		bits[valid++] = bit;
 	}
 }
 

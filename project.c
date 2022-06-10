@@ -14,25 +14,40 @@
 int main(void) {
 ////////////////////////////////////////////////////////////////////////////////
 // Setup.
-	joystick_t joystick;
-	pthread_t input;
-	int iret1 = pthread_create(&input, NULL, shield_input, (void*)&joystick);
-	pthread_detach(input);
+	//pthread_t input;
+	//int iret1 = pthread_create(&input, NULL, shield_input, (void*)&joystick);
+	//pthread_detach(input);
+
+	int device = open("/dev/ttyUSB0", O_RDWR | O_NONBLOCK | O_NOCTTY);
+ 	
+	set_interface_attribs (device, B38400, 0);  
+
+	printf("joystick connection open at %i device\n", device);
 
 	gpu_p32[0] = 3; // RGB333 mode.
 	gpu_p32[0x800] = 0x00ff00ff; // Magenta for HUD.
 
 	// Game state.
 	game_state_t* gs = setup_game();
+	joystick_t joystick;
 
 	int pickup_piece = -1;
 	int key_pressed = 0;
 	point_t pos_prev;
 	color_type player_to_move = WHITE;
 
+
 	while(1){
 		/////////////////////////////////////
 		// Poll controls.
+		shield_input(&joystick, device);	
+
+		int a = joystick.buttons & 0x1;
+		int b = (joystick.buttons & 0x2) >> 1;
+		int c = (joystick.buttons & 0x4) >> 2;
+		int d = (joystick.buttons & 0x8) >> 3;
+		printf("%x %i %i %i %i %i %i\n", joystick.magic, a, b, c, d, joystick.x, joystick.y);
+		 
 		int mov_x = 0;
 		int mov_y = 0;
 
