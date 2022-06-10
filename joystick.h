@@ -58,16 +58,11 @@ void shield_input(joystick_t* joystick, int device)
 	while(valid != magic_size)
 	{
 		int n = read(device, &bit, 1);
-		//if(bit != 0 && bit != prev_bit)
-		//{
-			//printf("%x\n", bit);
 		if((uint8_t)((MAGIC & shift_mask) >> magic_shift) == bit)
 		{
 			bits[valid] = bit;
 			magic_shift = 8*(++valid);
 			shift_mask = shift_mask << 8;
-			//printf("%i %i %x\n", valid, magic_shift, shift_mask);
-			//printf("%x\n", (uint8_t)((MAGIC & shift_mask) >> magic_shift));
 		}
 		else
 		{
@@ -76,8 +71,6 @@ void shield_input(joystick_t* joystick, int device)
 			magic_shift = 0;
 			shift_mask = 0xff;
 		}
-		//}
-		//prev_bit = bit;
 	}
 	//Valid data get rest 
 	int i;
