@@ -36,6 +36,7 @@ int main(void) {
 	point_t pos_prev;
 	color_type player_to_move = WHITE;
 
+	int frame_counter = 0;
 
 	while(1){
 		/////////////////////////////////////
@@ -46,43 +47,35 @@ int main(void) {
 		int b = (joystick.buttons & 0x2) >> 1;
 		int c = (joystick.buttons & 0x4) >> 2;
 		int d = (joystick.buttons & 0x8) >> 3;
-		printf("%x %i %i %i %i %i %i\n", joystick.magic, a, b, c, d, joystick.x, joystick.y);
+		//printf("%x %i %i %i %i %i %i\n", joystick.magic, a, b, c, d, joystick.x, joystick.y);
 		 
 		int mov_x = 0;
 		int mov_y = 0;
-
-		//TODO ADC logic needed here
-		int toggle_active = joypad.up + joypad.down + joypad.left + joypad.right ? 1 : 0;
+		
+		// ADC logic 
+		if(joystick.x < -THRESHOLD)
+		{
+			mov_x = -1;
+		}
+		if(joystick.x > THRESHOLD)
+		{
+			mov_x = 1;
+		}
+		if(joystick.y < -THRESHOLD)
+		{
+			mov_y = 1;
+		}
+		if(joystick.y > THRESHOLD)
+		{
+			mov_y = -1;
+		}
 
 		chess_piece_t* chesspieces;
 		/////////////////////////////////////
 		// Gameplay.
 		
-		if(toggle_active){
-			key_pressed = joypad.up + (joypad.down << 1) + (joypad.left << 2) + (joypad.right << 3);
-		}
-		else
+		if(frame_counter == 5)
 		{
-			switch(key_pressed)
-			{
-			//up pressed
-			case 1:
-				mov_y = -1;
-				break;
-			//down pressed
-			case 2:
-				mov_y = +1;
-				break;
-			//left pressed
-			case 4:
-				mov_x = -1;
-				break;
-			//right pressed
-			case 8:
-				mov_x = +1;
-				break;
-			}
-
 			if(gs->p1.x + mov_x*STEP < gs->chessboard_offset[0])
 			{
 				gs->p1.x = gs->chessboard_offset[0];
@@ -108,7 +101,7 @@ int main(void) {
 				gs->p1.y = gs->chessboard_offset[1] + CHESSBOARD - SQ_A;
 			}
 
-			key_pressed = 0;
+			//key_pressed = 0;
 
 			if(player_to_move == WHITE)
 				chesspieces = gs->white_pieces;
@@ -179,10 +172,12 @@ int main(void) {
 				pickup_piece = -1;
 				player_to_move *= -1;
 			}
+			frame_counter = 0;
 		}
 
 		/////////////////////////////////////
 		// Drawing.
+		frame_counter++;
 		
 		// Detecting rising edge of VSync.
 		WAIT_UNITL_0(gpu_p32[2]);

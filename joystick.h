@@ -7,9 +7,10 @@
 #include <unistd.h>
 #include <string.h>
 
-#define DEBUG_EXTREMA 0
-
 #define MAGIC 0xabbaceca
+
+#define EXTREME 512 
+#define THRESHOLD 256
 
 typedef struct __attribute__((__packed__))
 {
