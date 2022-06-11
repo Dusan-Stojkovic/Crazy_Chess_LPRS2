@@ -53,31 +53,31 @@ void draw_background()
 	}
 }
 
-void draw_chessboard(game_state_t* gs)
+void draw_chessboard(uint16_t color)
 {
 	// Draw black/white checkboard
-	for(uint16_t r = gs->chessboard_offset[1]; r < CHESSBOARD + gs->chessboard_offset[1]; r++)
+	for(uint16_t r = CHESSBOARD_OFFSET_Y; r < CHESSBOARD + CHESSBOARD_OFFSET_Y; r++)
 	{
 		if((r/10) % 2 == 0)
-			gs->color = 0xfff;
+			color = 0xfff;
 		else
-			gs->color = 0x0;
-		for(uint16_t c = gs->chessboard_offset[0]; c < CHESSBOARD + gs->chessboard_offset[0]; c++)
+			color = 0x0;
+		for(uint16_t c = CHESSBOARD_OFFSET_X; c < CHESSBOARD + CHESSBOARD_OFFSET_X; c++)
 		{
 			if((c / 10) % 2 == 0)
-				unpack_rgb333_p32[r*SCREEN_RGB333_W + c] = gs->color;
+				unpack_rgb333_p32[r*SCREEN_RGB333_W + c] = color;
 			else
-				unpack_rgb333_p32[r*SCREEN_RGB333_W + c] = ~(gs->color);
+				unpack_rgb333_p32[r*SCREEN_RGB333_W + c] = ~color;
 		}
 	}
 }
 
-void draw_player_cursor(game_state_t* gs, uint16_t color)
+void draw_player_cursor(point_t p, uint16_t color)
 {
 	// Draw cursor
-	for(uint16_t r = gs->p1.y; r < gs->p1.y + SQ_A; r++){
-		for(uint16_t c = gs->p1.x; c < gs->p1.x + SQ_A; c++){
-			if((r-gs->p1.y) < 1 || (c-gs->p1.x) < 1 || (r-gs->p1.y) > 8 || (c-gs->p1.x) > 8)
+	for(uint16_t r = p.y; r < p.y + SQ_A; r++){
+		for(uint16_t c = p.x; c < p.x + SQ_A; c++){
+			if((r - p.y) < 1 || (c - p.x) < 1 || (r - p.y) > 8 || (c - p.x) > 8)
 				unpack_rgb333_p32[r*SCREEN_RGB333_W + c] = color;
 		}
 	}

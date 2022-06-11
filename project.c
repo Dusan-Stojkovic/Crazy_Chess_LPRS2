@@ -14,10 +14,6 @@
 int main(void) {
 ////////////////////////////////////////////////////////////////////////////////
 // Setup.
-	//pthread_t input;
-	//int iret1 = pthread_create(&input, NULL, shield_input, (void*)&joystick);
-	//pthread_detach(input);
-
 	int device = open("/dev/ttyUSB0", O_RDWR | O_NONBLOCK | O_NOCTTY);
  	
 	set_interface_attribs (device, B38400, 0);  
@@ -37,72 +33,74 @@ int main(void) {
 	color_type player_to_move = WHITE;
 
 	int frame_counter = 0;
+	int mov_x;
+	int mov_y;
 
 	while(1){
-		/////////////////////////////////////
-		// Poll controls.
-		shield_input(&joystick, device);	
-
-		int a = joystick.buttons & 0x1;
-		int b = (joystick.buttons & 0x2) >> 1;
-		int c = (joystick.buttons & 0x4) >> 2;
-		int d = (joystick.buttons & 0x8) >> 3;
-		//printf("%x %i %i %i %i %i %i\n", joystick.magic, a, b, c, d, joystick.x, joystick.y);
-		 
-		int mov_x = 0;
-		int mov_y = 0;
-		
-		// ADC logic 
-		if(joystick.x < -THRESHOLD)
-		{
-			mov_x = -1;
-		}
-		if(joystick.x > THRESHOLD)
-		{
-			mov_x = 1;
-		}
-		if(joystick.y < -THRESHOLD)
-		{
-			mov_y = 1;
-		}
-		if(joystick.y > THRESHOLD)
-		{
-			mov_y = -1;
-		}
-
-		chess_piece_t* chesspieces;
-		/////////////////////////////////////
-		// Gameplay.
-		
+		//TODO instead of polling register an interrupt
 		if(frame_counter == 5)
 		{
-			if(gs->p1.x + mov_x*STEP < gs->chessboard_offset[0])
+			/////////////////////////////////////
+			// Poll controls.
+			shield_input(&joystick, device);	
+
+			int a = joystick.buttons & 0x1;
+			int b = (joystick.buttons & 0x2) >> 1;
+			int c = (joystick.buttons & 0x4) >> 2;
+			int d = (joystick.buttons & 0x8) >> 3;
+			//printf("%x %i %i %i %i %i %i\n", joystick.magic, a, b, c, d, joystick.x, joystick.y);
+			 
+			mov_x = 0;
+			mov_y = 0;
+
+			// ADC logic 
+			if(joystick.x < -THRESHOLD)
 			{
-				gs->p1.x = gs->chessboard_offset[0];
+				mov_x = -1;
 			}
-			else if(gs->p1.x + mov_x*STEP < gs->chessboard_offset[0] + CHESSBOARD - SQ_A)
+			if(joystick.x > THRESHOLD)
 			{
-				gs->p1.x += mov_x*STEP;
+				mov_x = 1;
 			}
-			else
+			if(joystick.y < -THRESHOLD)
 			{
-				gs->p1.x = gs->chessboard_offset[0] + CHESSBOARD - SQ_A;
+				mov_y = 1;
 			}
-			if(gs->p1.y + mov_y*STEP < gs->chessboard_offset[1])
+			if(joystick.y > THRESHOLD)
 			{
-				gs->p1.y = gs->chessboard_offset[1];
-			}
-			else if(gs->p1.y + mov_y*STEP < gs->chessboard_offset[1] + CHESSBOARD - SQ_A)
-			{
-				gs->p1.y += mov_y*STEP;
-			}
-			else
-			{
-				gs->p1.y = gs->chessboard_offset[1] + CHESSBOARD - SQ_A;
+				mov_y = -1;
 			}
 
-			//key_pressed = 0;
+			update_cursor(&(gs->p1), mov_x, mov_y);
 
+			mov_x = 0;
+			mov_y = 0;
+
+			//Regular logic
+			if(joypad.up)
+			{
+				mov_y = -1;
+			}
+			if(joypad.down)
+			{
+				mov_y = 1;
+			}
+			if(joypad.left)
+			{
+				mov_x = -1;
+			}
+			if(joypad.right)
+			{
+				mov_x = 1;
+			}
+
+			update_cursor(&(gs->p2), mov_x, mov_y);
+
+			chess_piece_t* chesspieces;
+			/////////////////////////////////////
+			// Gameplay.
+		
+			//TODO refactor game logic to work with two players
 			if(player_to_move == WHITE)
 				chesspieces = gs->white_pieces;
 			else
@@ -185,8 +183,9 @@ int main(void) {
 		// Draw in buffer while it is in VSync.
 		
 		draw_background();
-		draw_chessboard(gs);
-		draw_player_cursor(gs, 0x000d);
+		draw_chessboard(gs->color);
+		draw_player_cursor(gs->p1, 0x000d);
+		draw_player_cursor(gs->p2, 0x00d0);
 
 		for(uint16_t i = 0; i < PIECE_NUM / 2; i++)
 		{
