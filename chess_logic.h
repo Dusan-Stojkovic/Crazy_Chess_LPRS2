@@ -187,7 +187,7 @@ game_state_t* setup_game()
 	gs->p1.y = 100;
 
 	gs->p2.x = 80;
-	gs->p2.y = 10;
+	gs->p2.y = 30;
 
 
 	//Init chesspieces

@@ -91,12 +91,13 @@ void draw_sprite(
 	uint16_t dst_x,
 	uint16_t dst_y,
 	uint16_t atlas_x,
-	uint16_t atlas_y
+	uint16_t atlas_y,
+	uint16_t atlas_w
 ) {
 	//printf("START of print \n");
 	for(uint16_t i = atlas_y; i < atlas_y + src_h; i++){
 		for(uint16_t j = atlas_x; j < atlas_x + src_w; j++){
-			uint16_t pixels = src_p[i*chess_sprites__w + j];
+			uint16_t pixels = src_p[i*atlas_w + j];
 			//printf("%04x ", pixels);
 			if(pixels != 0x39)
 				unpack_rgb333_p32[(i + dst_y - atlas_y)*SCREEN_RGB333_W + j + dst_x - atlas_x] = pixels;
