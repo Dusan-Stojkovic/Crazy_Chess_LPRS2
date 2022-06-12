@@ -11,26 +11,39 @@
 #include "emulator.h"
 #include <pthread.h>
 
+//Change this to 0 if no Nokia 5110 shield is available
+#define TWO_PLAYER 1
+
 int main(void) {
 ////////////////////////////////////////////////////////////////////////////////
 // Setup.
+
+#if TWO_PLAYER
 	int device = open("/dev/ttyUSB0", O_RDWR | O_NONBLOCK | O_NOCTTY);
  	
 	set_interface_attribs (device, B38400, 0);  
 
 	printf("joystick connection open at %i device\n", device);
 
+	joystick_t joystick;
+
+	int pickup_piece_white = -1;
+	point_t pos_prev_white;
+
+	int a;
+	int b;
+	int c;
+	int d;
+#endif
+
 	gpu_p32[0] = 3; // RGB333 mode.
 	gpu_p32[0x800] = 0x00ff00ff; // Magenta for HUD.
 
 	// Game state.
 	game_state_t* gs = setup_game();
-	joystick_t joystick;
 
-	int pickup_piece = -1;
-	int key_pressed = 0;
-	point_t pos_prev;
-	color_type player_to_move = WHITE;
+	int pickup_piece_black = -1;
+	point_t pos_prev_black;
 
 	int frame_counter = 0;
 	int mov_x;
@@ -42,12 +55,13 @@ int main(void) {
 		{
 			/////////////////////////////////////
 			// Poll controls.
+#if TWO_PLAYER
 			shield_input(&joystick, device);	
 
-			int a = joystick.buttons & 0x1;
-			int b = (joystick.buttons & 0x2) >> 1;
-			int c = (joystick.buttons & 0x4) >> 2;
-			int d = (joystick.buttons & 0x8) >> 3;
+			a = joystick.buttons & 0x1;
+			b = (joystick.buttons & 0x2) >> 1;
+			c = (joystick.buttons & 0x4) >> 2;
+			d = (joystick.buttons & 0x8) >> 3;
 			//printf("%x %i %i %i %i %i %i\n", joystick.magic, a, b, c, d, joystick.x, joystick.y);
 			 
 			mov_x = 0;
@@ -56,22 +70,40 @@ int main(void) {
 			// ADC logic 
 			if(joystick.x < -THRESHOLD)
 			{
-				mov_x = -1;
+				mov_x += -1;
 			}
 			if(joystick.x > THRESHOLD)
 			{
-				mov_x = 1;
+				mov_x += 1;
 			}
 			if(joystick.y < -THRESHOLD)
 			{
-				mov_y = 1;
+				mov_y += 1;
 			}
 			if(joystick.y > THRESHOLD)
 			{
-				mov_y = -1;
+				mov_y += -1;
 			}
 
 			update_cursor(&(gs->p1), mov_x, mov_y);
+
+			//TODO integrate this validation better
+			if(pickup_piece(a, gs->white_pieces, &(gs->p1), &pickup_piece_white))
+			{
+				pos_prev_white = gs->p1;
+			}
+
+			if(overlap_piece(a, gs->white_pieces, pickup_piece_white))
+			{
+				printf("Invalid move, pieces can't overlap.\n");
+				gs->white_pieces[pickup_piece_white].pos= pos_prev_white;
+			}
+			else if(b && pickup_piece_white > -1)
+			{
+				pos_prev_white = (point_t){ 0, 0 };
+				pickup_piece_white = -1;
+			}
+#endif
 
 			mov_x = 0;
 			mov_y = 0;
@@ -79,103 +111,74 @@ int main(void) {
 			//Regular logic
 			if(joypad.up)
 			{
-				mov_y = -1;
+				mov_y += -1;
 			}
 			if(joypad.down)
 			{
-				mov_y = 1;
+				mov_y += 1;
 			}
 			if(joypad.left)
 			{
-				mov_x = -1;
+				mov_x += -1;
 			}
 			if(joypad.right)
 			{
-				mov_x = 1;
+				mov_x += 1;
 			}
 
 			update_cursor(&(gs->p2), mov_x, mov_y);
 
-			chess_piece_t* chesspieces;
 			/////////////////////////////////////
 			// Gameplay.
-		
-			//TODO refactor game logic to work with two players
-			if(player_to_move == WHITE)
-				chesspieces = gs->white_pieces;
-			else
-				chesspieces = gs->black_pieces;
 
-			if(joypad.a && pickup_piece == -1)
+			if(pickup_piece(joypad.a, gs->black_pieces, &(gs->p2), &pickup_piece_black))
 			{
-				for(uint8_t i = 0; i < PIECE_NUM / 2; i++)
-				{
-					if(chesspieces[i].pos.x == gs->p1.x && chesspieces[i].pos.y == gs->p1.y && chesspieces[i].c == player_to_move)
-					{
-						pickup_piece = i;
-						pos_prev.x = chesspieces[i].pos.x;
-						pos_prev.y = chesspieces[i].pos.y;
-						break;
-					}
-				}
+				pos_prev_black = gs->p2;
 			}
-			if(joypad.a && pickup_piece > -1)
+
+
+			if(overlap_piece(joypad.a, gs->black_pieces, pickup_piece_black))
 			{
-				chesspieces[pickup_piece].pos.x = gs->p1.x;
-				chesspieces[pickup_piece].pos.y = gs->p1.y;
-				
+				printf("Invalid move, pieces can't overlap.\n");
+				gs->black_pieces[pickup_piece_black].pos= pos_prev_black;
 			}
-			if(joypad.a == 0 && pickup_piece > -1)
+			else if(joypad.z && pickup_piece_black > -1)
 			{
-
-				// tests for valid moves goes here!
-				// test 1 no overlap of pieces!
-				// TODO expand this test to allow for captures!
-				for(uint8_t i = 0; i < PIECE_NUM / 2; i++)
-				{
-					if(chesspieces[i].pos.x == chesspieces[pickup_piece].pos.x && 
-							chesspieces[i].pos.y == chesspieces[pickup_piece].pos.y && 
-							i != pickup_piece)
-					{
-						printf("Invalid move, pieces can't overlap.\n");
-						chesspieces[i].pos.x = pos_prev.x;
-						chesspieces[i].pos.y = pos_prev.y;
-						break;
-					}
-				}
-
-				switch(chesspieces[pickup_piece].p)
-				{
-					case KING:
-						break;
-					case QUEEN:
-						break;
-					case ROOK:
-						break;
-					case BISHOP:
-						break;
-					case KNIGHT:
-						break;
-					case PAWN:
-						if(validate_pawn(gs, chesspieces[pickup_piece], pos_prev) != 0)
-						{
-							chesspieces[pickup_piece].pos.x = pos_prev.x;
-							chesspieces[pickup_piece].pos.y = pos_prev.y;
-						}
-						break;
-				}
-
-				pos_prev.x = 0;
-				pos_prev.y = 0;
-				pickup_piece = -1;
-				player_to_move *= -1;
+				pos_prev_black = (point_t){ 0, 0 };
+				pickup_piece_black = -1;
 			}
+
+
+			// tests for valid moves goes here!
+			// test 1 no overlap of pieces!
+			// TODO expand this test to allow for captures!
+
+			//switch(chesspieces[pickup_piece].p)
+			//{
+			//	case KING:
+			//		break;
+			//	case QUEEN:
+			//		break;
+			//	case ROOK:
+			//		break;
+			//	case BISHOP:
+			//		break;
+			//	case KNIGHT:
+			//		break;
+			//	case PAWN:
+			//		if(validate_pawn(gs, chesspieces[pickup_piece], pos_prev) != 0)
+			//		{
+			//			chesspieces[pickup_piece].pos.x = pos_prev.x;
+			//			chesspieces[pickup_piece].pos.y = pos_prev.y;
+			//		}
+			//		break;
+			//}
 			frame_counter = 0;
 		}
 
+		frame_counter++;
 		/////////////////////////////////////
 		// Drawing.
-		frame_counter++;
 		
 		// Detecting rising edge of VSync.
 		WAIT_UNITL_0(gpu_p32[2]);
@@ -184,8 +187,10 @@ int main(void) {
 		
 		draw_background();
 		draw_chessboard(gs->color);
-		draw_player_cursor(gs->p1, 0x000d);
-		draw_player_cursor(gs->p2, 0x00d0);
+#if TWO_PLAYER
+		draw_player_cursor(gs->p1, 0x000f);
+#endif
+		draw_player_cursor(gs->p2, 0x00f0);
 
 		for(uint16_t i = 0; i < PIECE_NUM / 2; i++)
 		{

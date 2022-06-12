@@ -42,7 +42,6 @@ typedef struct {
 	color_type c;
 } chess_piece_t;
 
-
 typedef struct {
 	point_t p1;
 	point_t p2;
@@ -81,6 +80,45 @@ void update_cursor(point_t* p, int mov_x, int mov_y)
 	{
 		p->y = CHESSBOARD_OFFSET_Y + CHESSBOARD - SQ_A;
 	}
+}
+
+int overlap_piece(int select, chess_piece_t* chesspieces, int piece_index)
+{
+	if(select == 0 && piece_index > -1)
+	{
+		for(uint8_t i = 0; i < PIECE_NUM / 2; i++)
+		{
+			if(chesspieces[i].pos.x == chesspieces[piece_index].pos.x && 
+					chesspieces[i].pos.y == chesspieces[piece_index].pos.y && 
+					i != piece_index)
+			{
+				return 1;
+			}
+		}
+	}
+	return 0;
+}
+
+int pickup_piece(int select, chess_piece_t* chesspieces, point_t* p, int *piece_index)
+{
+	if(select && *piece_index == -1)
+	{
+		for(uint8_t i = 0; i < PIECE_NUM / 2; i++)
+		{
+			if(chesspieces[i].pos.x == p->x && chesspieces[i].pos.y == p->y)
+			{
+				*piece_index = i;
+				chesspieces[i].pos = *p;
+				return 1;		//Mode 1: new piece selected
+			}
+		}
+	}
+	if(*piece_index > -1)
+	{
+		chesspieces[*piece_index].pos.x = p->x;
+		chesspieces[*piece_index].pos.y = p->y;
+	}
+	return 0;					//Mode 0: previous selected piece moved
 }
 
 ///////////////////////////////////////////////////////////////////////////////
