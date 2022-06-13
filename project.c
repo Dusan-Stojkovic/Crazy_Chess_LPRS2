@@ -187,35 +187,36 @@ int main(void) {
 		// Draw in buffer while it is in VSync.
 		
 		//Draw background
-		uint16_t step_x = 32;
-		uint16_t step_y = 32;
-		uint16_t startdraw_x = 0;
-		uint16_t startdraw_y;
+		// uint16_t step_x = 32;
+		// uint16_t step_y = 32;
+		// uint16_t startdraw_x = 0;
+		// uint16_t startdraw_y;
 
-		//draw_sprite(background_sprites__p, step_x, step_y, startdraw_x, startdraw_y, 0, 0, background_sprites__w);
+		// //draw_sprite(background_sprites__p, step_x, step_y, startdraw_x, startdraw_y, 0, 0, background_sprites__w);
 		
-		do
-		{
-			startdraw_y = 0;
-			do
-			{
-				draw_sprite(background_sprites__p, step_x, step_y, startdraw_x, startdraw_y, 0, 0, background_sprites__w);
-				startdraw_y += step_y;
-			}
-			while(startdraw_y < SCREEN_RGB333_H - step_y);
-			draw_sprite(background_sprites__p, startdraw_x, SCREEN_RGB333_H - startdraw_y, startdraw_x, startdraw_y, 0, 0, background_sprites__w);
-			startdraw_x += step_x;
-		}
-		while(startdraw_x < SCREEN_RGB333_W - step_x);
-		startdraw_y = 0;
-		do
-		{
-			//draw_sprite(background_sprites__p, step_x, step_y, startdraw_x, startdraw_y, 0, 0);
-			draw_sprite(background_sprites__p, startdraw_x, SCREEN_RGB333_H - startdraw_y, startdraw_x, startdraw_y, 0, 0, background_sprites__w);
-			startdraw_y += step_y;
-		}
-		while(startdraw_y < SCREEN_RGB333_H - step_y);
-		draw_sprite(background_sprites__p, SCREEN_RGB333_W - startdraw_x, SCREEN_RGB333_H - startdraw_y, startdraw_x, startdraw_y, 0, 0, background_sprites__w);
+		// do
+		// {
+		// 	startdraw_y = 0;
+		// 	do
+		// 	{
+		// 		draw_sprite(background_sprites__p, step_x, step_y, startdraw_x, startdraw_y, 0, 0, background_sprites__w);
+		// 		startdraw_y += step_y;
+		// 	}
+		// 	while(startdraw_y < SCREEN_RGB333_H - step_y);
+		// 	draw_sprite(background_sprites__p, startdraw_x, SCREEN_RGB333_H - startdraw_y, startdraw_x, startdraw_y, 0, 0, background_sprites__w);
+		// 	startdraw_x += step_x;
+		// }
+		// while(startdraw_x < SCREEN_RGB333_W - step_x);
+		// startdraw_y = 0;
+		// do
+		// {
+		// 	//draw_sprite(background_sprites__p, step_x, step_y, startdraw_x, startdraw_y, 0, 0);
+		// 	draw_sprite(background_sprites__p, startdraw_x, SCREEN_RGB333_H - startdraw_y, startdraw_x, startdraw_y, 0, 0, background_sprites__w);
+		// 	startdraw_y += step_y;
+		// }
+		// while(startdraw_y < SCREEN_RGB333_H - step_y);
+		// draw_sprite(background_sprites__p, SCREEN_RGB333_W - startdraw_x, SCREEN_RGB333_H - startdraw_y, startdraw_x, startdraw_y, 0, 0, background_sprites__w);
+		draw_sprite(background_sprites__p, SCREEN_RGB333_W, SCREEN_RGB333_H, 0, 0, 0, 0, background_sprites__w);
 
 		draw_chessboard(gs->color);
 #if TWO_PLAYER
