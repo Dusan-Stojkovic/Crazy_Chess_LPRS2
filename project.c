@@ -13,7 +13,7 @@
 #include <pthread.h>
 
 //Change this to 0 if no Nokia 5110 shield is available
-#define TWO_PLAYER 0
+#define TWO_PLAYER 1
 
 int main(void) {
 ////////////////////////////////////////////////////////////////////////////////
@@ -42,6 +42,12 @@ int main(void) {
 
 	// Game state.
 	game_state_t* gs = setup_game();
+	int white_num = PIECE_NUM / 2;
+	int black_num = PIECE_NUM / 2;
+
+	int score_white = 0;
+	int score_black = 0;
+	int score = 0;
 
 	int pickup_piece_black = -1;
 	point_t pos_prev_black;
@@ -65,6 +71,9 @@ int main(void) {
 			d = (joystick.buttons & 0x8) >> 3;
 			//printf("%x %i %i %i %i %i %i\n", joystick.magic, a, b, c, d, joystick.x, joystick.y);
 			 
+
+			/////////////////////////////////////
+			// Gameplay.
 			mov_x = 0;
 			mov_y = 0;
 
@@ -89,18 +98,40 @@ int main(void) {
 			update_cursor(&(gs->p1), mov_x, mov_y);
 
 			//TODO integrate this validation better
-			if(pickup_piece(a, gs->white_pieces, &(gs->p1), &pickup_piece_white))
+			if(pickup_piece(a, gs->white_pieces, white_num, &(gs->p1), &pickup_piece_white))
 			{
 				pos_prev_white = gs->p1;
 			}
 
-			if(overlap_piece(a, gs->white_pieces, pickup_piece_white))
+			if(overlap_piece(a, gs->white_pieces, white_num, pickup_piece_white))
 			{
 				printf("Invalid move, pieces can't overlap.\n");
 				gs->white_pieces[pickup_piece_white].pos= pos_prev_white;
+				gs->p1 = pos_prev_white;
 			}
 			else if(b && pickup_piece_white > -1)
 			{
+				//TODO test for captures
+				pos_prev_white = (point_t){ 0, 0 };
+				pickup_piece_white = -1;
+			}
+			else
+			{
+				pos_prev_white = gs->p1;
+			}
+
+			score = piece_combat(gs->white_pieces, gs->black_pieces, pickup_piece_white, &white_num, &black_num);
+			if(score > 0)
+			{
+				score_white += score;
+				printf("Updated score for white to: %i\n", score_white);
+				pos_prev_white = (point_t){ 0, 0 };
+				pickup_piece_white = -1;
+			}
+			else if(score < 0)
+			{
+				score_black -= score;
+				printf("Updated score for black to: %i\n", score_black);
 				pos_prev_white = (point_t){ 0, 0 };
 				pickup_piece_white = -1;
 			}
@@ -129,26 +160,42 @@ int main(void) {
 
 			update_cursor(&(gs->p2), mov_x, mov_y);
 
-			/////////////////////////////////////
-			// Gameplay.
-
-			if(pickup_piece(joypad.a, gs->black_pieces, &(gs->p2), &pickup_piece_black))
+			if(pickup_piece(joypad.a, gs->black_pieces, black_num, &(gs->p2), &pickup_piece_black))
 			{
 				pos_prev_black = gs->p2;
 			}
 
-
-			if(overlap_piece(joypad.a, gs->black_pieces, pickup_piece_black))
+			if(overlap_piece(joypad.a, gs->black_pieces, black_num, pickup_piece_black))
 			{
 				printf("Invalid move, pieces can't overlap.\n");
 				gs->black_pieces[pickup_piece_black].pos= pos_prev_black;
+				gs->p2 = pos_prev_black;
 			}
 			else if(joypad.z && pickup_piece_black > -1)
 			{
 				pos_prev_black = (point_t){ 0, 0 };
 				pickup_piece_black = -1;
 			}
-
+			else
+			{
+				pos_prev_black = gs->p2;
+			}
+			
+			score = piece_combat(gs->black_pieces, gs->white_pieces, pickup_piece_black, &black_num, &white_num);
+			if(score > 0)
+			{
+				score_black += score;
+				printf("Updated score for black to: %i\n", score_black);
+				pos_prev_black = (point_t){ 0, 0 };
+				pickup_piece_black = -1;
+			}
+			else if(score < 0)
+			{
+				score_white -= score;
+				printf("Updated score for white to: %i\n", score_white);
+				pos_prev_black = (point_t){ 0, 0 };
+				pickup_piece_black = -1;
+			}
 
 			// tests for valid moves goes here!
 			// test 1 no overlap of pieces!
@@ -184,38 +231,8 @@ int main(void) {
 		// Detecting rising edge of VSync.
 		WAIT_UNITL_0(gpu_p32[2]);
 		WAIT_UNITL_1(gpu_p32[2]);
-		// Draw in buffer while it is in VSync.
-		
-		//Draw background
-		// uint16_t step_x = 32;
-		// uint16_t step_y = 32;
-		// uint16_t startdraw_x = 0;
-		// uint16_t startdraw_y;
 
-		// //draw_sprite(background_sprites__p, step_x, step_y, startdraw_x, startdraw_y, 0, 0, background_sprites__w);
-		
-		// do
-		// {
-		// 	startdraw_y = 0;
-		// 	do
-		// 	{
-		// 		draw_sprite(background_sprites__p, step_x, step_y, startdraw_x, startdraw_y, 0, 0, background_sprites__w);
-		// 		startdraw_y += step_y;
-		// 	}
-		// 	while(startdraw_y < SCREEN_RGB333_H - step_y);
-		// 	draw_sprite(background_sprites__p, startdraw_x, SCREEN_RGB333_H - startdraw_y, startdraw_x, startdraw_y, 0, 0, background_sprites__w);
-		// 	startdraw_x += step_x;
-		// }
-		// while(startdraw_x < SCREEN_RGB333_W - step_x);
-		// startdraw_y = 0;
-		// do
-		// {
-		// 	//draw_sprite(background_sprites__p, step_x, step_y, startdraw_x, startdraw_y, 0, 0);
-		// 	draw_sprite(background_sprites__p, startdraw_x, SCREEN_RGB333_H - startdraw_y, startdraw_x, startdraw_y, 0, 0, background_sprites__w);
-		// 	startdraw_y += step_y;
-		// }
-		// while(startdraw_y < SCREEN_RGB333_H - step_y);
-		// draw_sprite(background_sprites__p, SCREEN_RGB333_W - startdraw_x, SCREEN_RGB333_H - startdraw_y, startdraw_x, startdraw_y, 0, 0, background_sprites__w);
+		// Draw in buffer while it is in VSync.
 		draw_sprite(background_sprites__p, SCREEN_RGB333_W, SCREEN_RGB333_H, 0, 0, 0, 0, background_sprites__w);
 
 		draw_chessboard(gs->color);
@@ -224,12 +241,12 @@ int main(void) {
 #endif
 		draw_player_cursor(gs->p2, 0x00f0);
 
-		for(uint16_t i = 0; i < PIECE_NUM / 2; i++)
+		for(uint16_t i = 0; i < white_num; i++)
 		{
 			// Draw chesspiece
 			draw_sprite(chess_sprites__p, 10, 10, gs->white_pieces[i].pos.x, gs->white_pieces[i].pos.y, gs->white_pieces[i].atlas.x, gs->white_pieces[i].atlas.y, chess_sprites__w);
 		}
-		for(uint16_t i = 0; i < PIECE_NUM / 2; i++)
+		for(uint16_t i = 0; i < black_num; i++)
 		{
 			// Draw chesspiece
 			draw_sprite(chess_sprites__p, 10, 10, gs->black_pieces[i].pos.x, gs->black_pieces[i].pos.y, gs->black_pieces[i].atlas.x, gs->black_pieces[i].atlas.y, chess_sprites__w);

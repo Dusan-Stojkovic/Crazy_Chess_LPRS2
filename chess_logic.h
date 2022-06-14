@@ -9,6 +9,7 @@
 #define SQ_A 10
 #define CHESSBOARD 80
 #define STEP 10
+#define PIECE_NUM_MAX 92
 #define PIECE_NUM 32
 #define CHESSBOARD_OFFSET_X 10
 #define CHESSBOARD_OFFSET_Y 30
@@ -17,12 +18,12 @@
 // Game data structures.
 
 typedef enum {
-	KING,
-	QUEEN,
-	ROOK,
-	BISHOP,
-	KNIGHT,
-	PAWN
+	KING = 1,
+	QUEEN = 5,
+	ROOK = 4,
+	BISHOP = 3,
+	KNIGHT = 2,
+	PAWN = 1
 } piece_type;
 
 typedef enum {
@@ -37,9 +38,10 @@ typedef struct {
 
 typedef struct {
 	point_t atlas;
-	piece_type p;
+	piece_type t;
 	point_t pos;
 	color_type c;
+	int h;
 } chess_piece_t;
 
 typedef struct {
@@ -55,7 +57,6 @@ typedef struct {
 
 void update_cursor(point_t* p, int mov_x, int mov_y)
 {
-
 	if(p->x + mov_x*STEP < CHESSBOARD_OFFSET_X)
 	{
 		p->x = CHESSBOARD_OFFSET_X;
@@ -82,11 +83,11 @@ void update_cursor(point_t* p, int mov_x, int mov_y)
 	}
 }
 
-int overlap_piece(int select, chess_piece_t* chesspieces, int piece_index)
+int overlap_piece(int select, chess_piece_t* chesspieces, int piece_num, int piece_index)
 {
 	if(select == 0 && piece_index > -1)
 	{
-		for(uint8_t i = 0; i < PIECE_NUM / 2; i++)
+		for(uint8_t i = 0; i < piece_num; i++)
 		{
 			if(chesspieces[i].pos.x == chesspieces[piece_index].pos.x && 
 					chesspieces[i].pos.y == chesspieces[piece_index].pos.y && 
@@ -99,11 +100,11 @@ int overlap_piece(int select, chess_piece_t* chesspieces, int piece_index)
 	return 0;
 }
 
-int pickup_piece(int select, chess_piece_t* chesspieces, point_t* p, int *piece_index)
+int pickup_piece(int select, chess_piece_t* chesspieces, int piece_num, point_t* p, int *piece_index)
 {
 	if(select && *piece_index == -1)
 	{
-		for(uint8_t i = 0; i < PIECE_NUM / 2; i++)
+		for(uint8_t i = 0; i < piece_num; i++)
 		{
 			if(chesspieces[i].pos.x == p->x && chesspieces[i].pos.y == p->y)
 			{
@@ -119,6 +120,54 @@ int pickup_piece(int select, chess_piece_t* chesspieces, point_t* p, int *piece_
 		chesspieces[*piece_index].pos.y = p->y;
 	}
 	return 0;					//Mode 0: previous selected piece moved
+}
+
+//ret value is score
+int piece_combat(chess_piece_t* attacker, chess_piece_t* defender, int attack_i, int* attack_force, int* defense_force)
+{
+	//TODO piece num will have to be a dynamic variable (default for each side)
+	//PIECE_NUM/2
+	
+	//attack/defense value are set on piece types
+	int score = 0;
+	for(int i = 0; i < *defense_force; i++)
+	{
+		if(attacker[attack_i].pos.x == defender[i].pos.x && attacker[attack_i].pos.y == defender[i].pos.y)
+		{
+			//TODO figure out how to deallocate p and enemy
+			if(attacker[attack_i].h == defender[i].h)
+			{
+				//deallocate attacker, add score to attacker 
+				score = defender[i].h;
+				defender[i].h = 1;
+				attacker[attack_i] = attacker[*attack_force - 1];
+				//attacker[*attack_force - 1] = 0;
+				(*attack_force)--;
+				return score;
+			}
+			else if(attacker[attack_i].h - defender[i].h < 0)
+			{
+				//deallocate attacker, add score to defender
+				score = -attacker[attack_i].h;
+				defender[i].h -= attacker[attack_i].h;
+				attacker[attack_i] = attacker[*attack_force - 1];
+				(*attack_force)--;
+				return score;
+			}
+			else
+			{
+				//deallocate defender, add score to attacker
+				score = defender[i].h;
+				attacker[attack_i].h -= defender[i].h;
+				defender[i] = defender[*defense_force - 1];
+				(*defense_force)--;
+				return score;
+			}
+		}
+
+	}
+
+	return score;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -164,23 +213,23 @@ int validate_diagonals(game_state_t* gs, chess_piece_t piece)
 ///////////////////////////////////////////////////////////////////////////////
 // Init game_state.
 
-void init_chess_piece(chess_piece_t* piece, color_type c, piece_type t, uint8_t atlas_x, uint8_t atlas_y, uint8_t pos_x, uint8_t pos_y)
+void init_chess_piece(chess_piece_t* piece, color_type c, piece_type t, int health, uint8_t atlas_x, uint8_t atlas_y, uint8_t pos_x, uint8_t pos_y)
 {
-	piece->p = t;
+	piece->t = t;
 	piece->pos.x = pos_x;
 	piece->pos.y = pos_y;
 	piece->atlas.x = atlas_x;
 	piece->atlas.y = atlas_y;
 	piece->c = c;
+	piece->h = health;
 }
 
 game_state_t* setup_game()
 {
-	chess_piece_t init_pieces[PIECE_NUM];
 	game_state_t* gs;
 	gs = (game_state_t*) calloc(1, sizeof(game_state_t));
-	gs->white_pieces = (chess_piece_t*) calloc(16, sizeof(chess_piece_t));
-	gs->black_pieces = (chess_piece_t*) calloc(16, sizeof(chess_piece_t));
+	gs->white_pieces = (chess_piece_t*) calloc(PIECE_NUM / 2, sizeof(chess_piece_t));
+	gs->black_pieces = (chess_piece_t*) calloc(PIECE_NUM / 2, sizeof(chess_piece_t));
 	gs->color = 0xfff; // for white
 
 	gs->p1.x = 80;
@@ -189,42 +238,41 @@ game_state_t* setup_game()
 	gs->p2.x = 80;
 	gs->p2.y = 30;
 
-
 	//Init chesspieces
 	//White pieces
-	init_chess_piece(&(gs->black_pieces[0]), BLACK, KING, 0, 0, CHESSBOARD_OFFSET_X + 40, CHESSBOARD_OFFSET_Y);
-	init_chess_piece(&(gs->black_pieces[1]), BLACK, QUEEN, 10, 0, CHESSBOARD_OFFSET_X + 30, CHESSBOARD_OFFSET_Y);
-	init_chess_piece(&(gs->black_pieces[2]), BLACK, ROOK, 20, 0, CHESSBOARD_OFFSET_X, CHESSBOARD_OFFSET_Y);
-	init_chess_piece(&(gs->black_pieces[3]), BLACK, ROOK, 20, 0, CHESSBOARD_OFFSET_X + CHESSBOARD - 10, CHESSBOARD_OFFSET_Y);
-	init_chess_piece(&(gs->black_pieces[4]), BLACK, BISHOP, 30, 0, CHESSBOARD_OFFSET_X + 20, CHESSBOARD_OFFSET_Y);
-	init_chess_piece(&(gs->black_pieces[5]), BLACK, BISHOP, 30, 0, CHESSBOARD_OFFSET_X + 50, CHESSBOARD_OFFSET_Y);
-	init_chess_piece(&(gs->black_pieces[6]), BLACK, KNIGHT, 40, 0, CHESSBOARD_OFFSET_X + 10, CHESSBOARD_OFFSET_Y);
-	init_chess_piece(&(gs->black_pieces[7]), BLACK, KNIGHT, 40, 0, CHESSBOARD_OFFSET_X + 60, CHESSBOARD_OFFSET_Y);
-	init_chess_piece(&(gs->black_pieces[8]), BLACK, PAWN, 50, 0, CHESSBOARD_OFFSET_X, CHESSBOARD_OFFSET_Y + 10);
-	init_chess_piece(&(gs->black_pieces[9]), BLACK, PAWN, 50, 0, CHESSBOARD_OFFSET_X + 10, CHESSBOARD_OFFSET_Y + 10);
-	init_chess_piece(&(gs->black_pieces[10]), BLACK, PAWN, 50, 0, CHESSBOARD_OFFSET_X + 20, CHESSBOARD_OFFSET_Y + 10);
-	init_chess_piece(&(gs->black_pieces[11]), BLACK, PAWN, 50, 0, CHESSBOARD_OFFSET_X + 30, CHESSBOARD_OFFSET_Y + 10);
-	init_chess_piece(&(gs->black_pieces[12]), BLACK, PAWN, 50, 0, CHESSBOARD_OFFSET_X + 40, CHESSBOARD_OFFSET_Y + 10);
-	init_chess_piece(&(gs->black_pieces[13]), BLACK, PAWN, 50, 0, CHESSBOARD_OFFSET_X + 50, CHESSBOARD_OFFSET_Y + 10);
-	init_chess_piece(&(gs->black_pieces[14]), BLACK, PAWN, 50, 0, CHESSBOARD_OFFSET_X + 60, CHESSBOARD_OFFSET_Y + 10);
-	init_chess_piece(&(gs->black_pieces[15]), BLACK, PAWN, 50, 0, CHESSBOARD_OFFSET_X + 70, CHESSBOARD_OFFSET_Y + 10);
+	init_chess_piece(&(gs->black_pieces[0]), BLACK, KING, 0, 0, 0, CHESSBOARD_OFFSET_X + 40, CHESSBOARD_OFFSET_Y);
+	init_chess_piece(&(gs->black_pieces[1]), BLACK, QUEEN, 5, 10, 0, CHESSBOARD_OFFSET_X + 30, CHESSBOARD_OFFSET_Y);
+	init_chess_piece(&(gs->black_pieces[2]), BLACK, ROOK, 4, 20, 0, CHESSBOARD_OFFSET_X, CHESSBOARD_OFFSET_Y);
+	init_chess_piece(&(gs->black_pieces[3]), BLACK, ROOK, 4, 20, 0, CHESSBOARD_OFFSET_X + CHESSBOARD - 10, CHESSBOARD_OFFSET_Y);
+	init_chess_piece(&(gs->black_pieces[4]), BLACK, BISHOP, 3, 30, 0, CHESSBOARD_OFFSET_X + 20, CHESSBOARD_OFFSET_Y);
+	init_chess_piece(&(gs->black_pieces[5]), BLACK, BISHOP, 3, 30, 0, CHESSBOARD_OFFSET_X + 50, CHESSBOARD_OFFSET_Y);
+	init_chess_piece(&(gs->black_pieces[6]), BLACK, KNIGHT, 2, 40, 0, CHESSBOARD_OFFSET_X + 10, CHESSBOARD_OFFSET_Y);
+	init_chess_piece(&(gs->black_pieces[7]), BLACK, KNIGHT, 2, 40, 0, CHESSBOARD_OFFSET_X + 60, CHESSBOARD_OFFSET_Y);
+	init_chess_piece(&(gs->black_pieces[8]), BLACK, PAWN, 1, 50, 0, CHESSBOARD_OFFSET_X, CHESSBOARD_OFFSET_Y + 10);
+	init_chess_piece(&(gs->black_pieces[9]), BLACK, PAWN, 1, 50, 0, CHESSBOARD_OFFSET_X + 10, CHESSBOARD_OFFSET_Y + 10);
+	init_chess_piece(&(gs->black_pieces[10]), BLACK, PAWN, 1, 50, 0, CHESSBOARD_OFFSET_X + 20, CHESSBOARD_OFFSET_Y + 10);
+	init_chess_piece(&(gs->black_pieces[11]), BLACK, PAWN, 1, 50, 0, CHESSBOARD_OFFSET_X + 30, CHESSBOARD_OFFSET_Y + 10);
+	init_chess_piece(&(gs->black_pieces[12]), BLACK, PAWN, 1, 50, 0, CHESSBOARD_OFFSET_X + 40, CHESSBOARD_OFFSET_Y + 10);
+	init_chess_piece(&(gs->black_pieces[13]), BLACK, PAWN, 1, 50, 0, CHESSBOARD_OFFSET_X + 50, CHESSBOARD_OFFSET_Y + 10);
+	init_chess_piece(&(gs->black_pieces[14]), BLACK, PAWN, 1, 50, 0, CHESSBOARD_OFFSET_X + 60, CHESSBOARD_OFFSET_Y + 10);
+	init_chess_piece(&(gs->black_pieces[15]), BLACK, PAWN, 1, 50, 0, CHESSBOARD_OFFSET_X + 70, CHESSBOARD_OFFSET_Y + 10);
 	//Black pieces
-	init_chess_piece(&(gs->white_pieces[0]), WHITE, KING, 0, 10, CHESSBOARD_OFFSET_X + 40, CHESSBOARD_OFFSET_Y + CHESSBOARD - 10);
-	init_chess_piece(&(gs->white_pieces[1]), WHITE, QUEEN, 10, 10, CHESSBOARD_OFFSET_X + 30, CHESSBOARD_OFFSET_Y + CHESSBOARD - 10);
-	init_chess_piece(&(gs->white_pieces[2]), WHITE, ROOK, 20, 10, CHESSBOARD_OFFSET_X, CHESSBOARD_OFFSET_Y + CHESSBOARD - 10);
-	init_chess_piece(&(gs->white_pieces[3]), WHITE, ROOK, 20, 10, CHESSBOARD_OFFSET_X + CHESSBOARD - 10, CHESSBOARD_OFFSET_Y + CHESSBOARD - 10);
-	init_chess_piece(&(gs->white_pieces[4]), WHITE, BISHOP, 30, 10, CHESSBOARD_OFFSET_X + 20, CHESSBOARD_OFFSET_Y + CHESSBOARD - 10);
-	init_chess_piece(&(gs->white_pieces[5]), WHITE, BISHOP, 30, 10, CHESSBOARD_OFFSET_X + 50, CHESSBOARD_OFFSET_Y + CHESSBOARD - 10);
-	init_chess_piece(&(gs->white_pieces[6]), WHITE, KNIGHT, 40, 10, CHESSBOARD_OFFSET_X + 10, CHESSBOARD_OFFSET_Y + CHESSBOARD - 10);
-	init_chess_piece(&(gs->white_pieces[7]), WHITE, KNIGHT, 40, 10, CHESSBOARD_OFFSET_X + 60, CHESSBOARD_OFFSET_Y + CHESSBOARD - 10);
-	init_chess_piece(&(gs->white_pieces[8]), WHITE, PAWN, 50, 10, CHESSBOARD_OFFSET_X, CHESSBOARD_OFFSET_Y + 60);
-	init_chess_piece(&(gs->white_pieces[9]), WHITE, PAWN, 50, 10, CHESSBOARD_OFFSET_X + 10, CHESSBOARD_OFFSET_Y + 60);
-	init_chess_piece(&(gs->white_pieces[10]), WHITE, PAWN, 50, 10, CHESSBOARD_OFFSET_X + 20, CHESSBOARD_OFFSET_Y + 60);
-	init_chess_piece(&(gs->white_pieces[11]), WHITE, PAWN, 50, 10, CHESSBOARD_OFFSET_X + 30, CHESSBOARD_OFFSET_Y + 60);
-	init_chess_piece(&(gs->white_pieces[12]), WHITE, PAWN, 50, 10, CHESSBOARD_OFFSET_X + 40, CHESSBOARD_OFFSET_Y + 60);
-	init_chess_piece(&(gs->white_pieces[13]), WHITE, PAWN, 50, 10, CHESSBOARD_OFFSET_X + 50, CHESSBOARD_OFFSET_Y + 60);
-	init_chess_piece(&(gs->white_pieces[14]), WHITE, PAWN, 50, 10, CHESSBOARD_OFFSET_X + 60, CHESSBOARD_OFFSET_Y + 60);
-	init_chess_piece(&(gs->white_pieces[15]), WHITE, PAWN, 50, 10, CHESSBOARD_OFFSET_X + 70, CHESSBOARD_OFFSET_Y + 60);
+	init_chess_piece(&(gs->white_pieces[0]), WHITE, KING, 0, 0, 10, CHESSBOARD_OFFSET_X + 40, CHESSBOARD_OFFSET_Y + CHESSBOARD - 10);
+	init_chess_piece(&(gs->white_pieces[1]), WHITE, QUEEN, 5, 10, 10, CHESSBOARD_OFFSET_X + 30, CHESSBOARD_OFFSET_Y + CHESSBOARD - 10);
+	init_chess_piece(&(gs->white_pieces[2]), WHITE, ROOK, 4, 20, 10, CHESSBOARD_OFFSET_X, CHESSBOARD_OFFSET_Y + CHESSBOARD - 10);
+	init_chess_piece(&(gs->white_pieces[3]), WHITE, ROOK, 4, 20, 10, CHESSBOARD_OFFSET_X + CHESSBOARD - 10, CHESSBOARD_OFFSET_Y + CHESSBOARD - 10);
+	init_chess_piece(&(gs->white_pieces[4]), WHITE, BISHOP, 3, 30, 10, CHESSBOARD_OFFSET_X + 20, CHESSBOARD_OFFSET_Y + CHESSBOARD - 10);
+	init_chess_piece(&(gs->white_pieces[5]), WHITE, BISHOP, 3, 30, 10, CHESSBOARD_OFFSET_X + 50, CHESSBOARD_OFFSET_Y + CHESSBOARD - 10);
+	init_chess_piece(&(gs->white_pieces[6]), WHITE, KNIGHT, 2, 40, 10, CHESSBOARD_OFFSET_X + 10, CHESSBOARD_OFFSET_Y + CHESSBOARD - 10);
+	init_chess_piece(&(gs->white_pieces[7]), WHITE, KNIGHT, 2, 40, 10, CHESSBOARD_OFFSET_X + 60, CHESSBOARD_OFFSET_Y + CHESSBOARD - 10);
+	init_chess_piece(&(gs->white_pieces[8]), WHITE, PAWN, 1, 50, 10, CHESSBOARD_OFFSET_X, CHESSBOARD_OFFSET_Y + 60);
+	init_chess_piece(&(gs->white_pieces[9]), WHITE, PAWN, 1, 50, 10, CHESSBOARD_OFFSET_X + 10, CHESSBOARD_OFFSET_Y + 60);
+	init_chess_piece(&(gs->white_pieces[10]), WHITE, PAWN, 1, 50, 10, CHESSBOARD_OFFSET_X + 20, CHESSBOARD_OFFSET_Y + 60);
+	init_chess_piece(&(gs->white_pieces[11]), WHITE, PAWN, 1, 50, 10, CHESSBOARD_OFFSET_X + 30, CHESSBOARD_OFFSET_Y + 60);
+	init_chess_piece(&(gs->white_pieces[12]), WHITE, PAWN, 1, 50, 10, CHESSBOARD_OFFSET_X + 40, CHESSBOARD_OFFSET_Y + 60);
+	init_chess_piece(&(gs->white_pieces[13]), WHITE, PAWN, 1, 50, 10, CHESSBOARD_OFFSET_X + 50, CHESSBOARD_OFFSET_Y + 60);
+	init_chess_piece(&(gs->white_pieces[14]), WHITE, PAWN, 1, 50, 10, CHESSBOARD_OFFSET_X + 60, CHESSBOARD_OFFSET_Y + 60);
+	init_chess_piece(&(gs->white_pieces[15]), WHITE, PAWN, 1, 50, 10, CHESSBOARD_OFFSET_X + 70, CHESSBOARD_OFFSET_Y + 60);
 
 	return gs;
 }
