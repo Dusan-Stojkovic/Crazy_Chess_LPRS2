@@ -13,7 +13,7 @@
 #include <pthread.h>
 
 //Change this to 0 if no Nokia 5110 shield is available
-#define TWO_PLAYER 1
+#define TWO_PLAYER 0
 
 int main(void) {
 ////////////////////////////////////////////////////////////////////////////////
