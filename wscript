@@ -112,7 +112,7 @@ def build(bld):
 	
 	bld.program(
 		features = 'cxx',
-		source = ['project.c', 'chesspieces.c', 'background.c'],
+		source = ['project.c', 'chesspieces.c', 'background.c', 'spawn_border.c'],
 		includes = ['build/'],
 		use = 'emulator',
 		target = 'project'

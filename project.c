@@ -7,6 +7,7 @@
 #include "system.h"
 #include "chesspieces.h"
 #include "background.h"
+#include "spawn_border.h"
 #include "chess_logic.h"
 #include "joystick.h"
 #include "emulator.h"
@@ -234,6 +235,9 @@ int main(void) {
 
 		// Draw in buffer while it is in VSync.
 		draw_sprite(background_sprites__p, SCREEN_RGB333_W, SCREEN_RGB333_H, 0, 0, 0, 0, background_sprites__w);
+		
+		draw_sprite(spawn_border__p, 20, 20, 95, 30, 0, 0, spawn_border__w);
+		draw_sprite(spawn_border__p, 20, 20, 95, 90, 0, 0, spawn_border__w);
 
 		draw_chessboard(gs->color);
 #if TWO_PLAYER
