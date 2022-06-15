@@ -1,4 +1,4 @@
-#include "red0.h"
+#include "7SEGM_red.h"
 
 uint16_t red_0__w = 10;
 uint16_t red_0__h = 20;

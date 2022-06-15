@@ -13,6 +13,8 @@
 #define PIECE_NUM 32
 #define CHESSBOARD_OFFSET_X 10
 #define CHESSBOARD_OFFSET_Y 30
+#define SPAWN_POOL 100
+#define POOL_SIZE 5
 
 ///////////////////////////////////////////////////////////////////////////////
 // Game data structures.
@@ -83,6 +85,9 @@ void update_cursor(point_t* p, int mov_x, int mov_y)
 	}
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Game validation.
+
 int overlap_piece(int select, chess_piece_t* chesspieces, int piece_num, int piece_index)
 {
 	if(select == 0 && piece_index > -1)
@@ -125,9 +130,6 @@ int pickup_piece(int select, chess_piece_t* chesspieces, int piece_num, point_t*
 //ret value is score
 int piece_combat(chess_piece_t* attacker, chess_piece_t* defender, int attack_i, int* attack_force, int* defense_force)
 {
-	//TODO piece num will have to be a dynamic variable (default for each side)
-	//PIECE_NUM/2
-	
 	//attack/defense value are set on piece types
 	int score = 0;
 	for(int i = 0; i < *defense_force; i++)
@@ -138,7 +140,7 @@ int piece_combat(chess_piece_t* attacker, chess_piece_t* defender, int attack_i,
 			if(attacker[attack_i].h == defender[i].h)
 			{
 				//deallocate attacker, add score to attacker 
-				score = defender[i].h;
+				score = defender[i].t;
 				defender[i].h = 1;
 				attacker[attack_i] = attacker[*attack_force - 1];
 				//attacker[*attack_force - 1] = 0;
@@ -148,7 +150,7 @@ int piece_combat(chess_piece_t* attacker, chess_piece_t* defender, int attack_i,
 			else if(attacker[attack_i].h - defender[i].h < 0)
 			{
 				//deallocate attacker, add score to defender
-				score = -attacker[attack_i].h;
+				score = -attacker[attack_i].t;
 				defender[i].h -= attacker[attack_i].h;
 				attacker[attack_i] = attacker[*attack_force - 1];
 				(*attack_force)--;
@@ -157,58 +159,46 @@ int piece_combat(chess_piece_t* attacker, chess_piece_t* defender, int attack_i,
 			else
 			{
 				//deallocate defender, add score to attacker
-				score = defender[i].h;
+				score = defender[i].t;
 				attacker[attack_i].h -= defender[i].h;
 				defender[i] = defender[*defense_force - 1];
 				(*defense_force)--;
 				return score;
 			}
 		}
-
 	}
 
 	return score;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// Game validation.
-
-int validate_king(game_state_t* gs, chess_piece_t piece)
+int spawn_pool(chess_piece_t** pool, color_type c, int *cash)
 {
-	return 0;
-}
-
-int validate_pawn(game_state_t* gs, chess_piece_t piece, point_t pos_prev)
-{
-	int overlap_flag = 0;
-	if(piece.c == WHITE)
+	uint8_t offset = 0;
+	uint8_t pool_y = CHESSBOARD_OFFSET_Y; 
+	if(c == WHITE)
 	{
-		//Test for moving up!
-		if(piece.pos.y == CHESSBOARD_OFFSET_Y + 10)
+		offset = 10;	
+		pool_y = CHESSBOARD_OFFSET_Y + CHESSBOARD - 10;
+	}
+
+	*pool = (chess_piece_t*) calloc(POOL_SIZE, sizeof(chess_piece_t));
+
+	init_chess_piece(&((*pool)[0]), c, PAWN, 1, 50, offset, SPAWN_POOL, pool_y);
+	init_chess_piece(&((*pool)[1]), c, KNIGHT, 2, 40, offset, SPAWN_POOL, pool_y);
+	init_chess_piece(&((*pool)[2]), c, BISHOP, 3, 30, offset, SPAWN_POOL, pool_y); 
+	init_chess_piece(&((*pool)[3]), c, ROOK, 4, 20, offset, SPAWN_POOL, pool_y);
+	init_chess_piece(&((*pool)[4]), c, QUEEN, 5, 10, offset, SPAWN_POOL, pool_y);
+
+	int i = 0;
+	for(i = 0; i < QUEEN - 1; i++)
+	{
+		if(i == *cash)
 		{
-			//Pawn can go two squares up now
-			//if(piece->pos.x == piece->pos
+			return i;
 		}
-
-		//Test for captures
 	}
-	else
-	{
-
-	}
-	return 0;
+	return i;
 }
-
-int validate_line(game_state_t* gs, chess_piece_t piece)
-{
-	return 0;
-}
-
-int validate_diagonals(game_state_t* gs, chess_piece_t piece)
-{
-	return 0;
-}
-
 
 ///////////////////////////////////////////////////////////////////////////////
 // Init game_state.
@@ -239,7 +229,7 @@ game_state_t* setup_game()
 	gs->p2.y = 30;
 
 	//Init chesspieces
-	//White pieces
+	//Black pieces
 	init_chess_piece(&(gs->black_pieces[0]), BLACK, KING, 0, 0, 0, CHESSBOARD_OFFSET_X + 40, CHESSBOARD_OFFSET_Y);
 	init_chess_piece(&(gs->black_pieces[1]), BLACK, QUEEN, 5, 10, 0, CHESSBOARD_OFFSET_X + 30, CHESSBOARD_OFFSET_Y);
 	init_chess_piece(&(gs->black_pieces[2]), BLACK, ROOK, 4, 20, 0, CHESSBOARD_OFFSET_X, CHESSBOARD_OFFSET_Y);
@@ -256,7 +246,8 @@ game_state_t* setup_game()
 	init_chess_piece(&(gs->black_pieces[13]), BLACK, PAWN, 1, 50, 0, CHESSBOARD_OFFSET_X + 50, CHESSBOARD_OFFSET_Y + 10);
 	init_chess_piece(&(gs->black_pieces[14]), BLACK, PAWN, 1, 50, 0, CHESSBOARD_OFFSET_X + 60, CHESSBOARD_OFFSET_Y + 10);
 	init_chess_piece(&(gs->black_pieces[15]), BLACK, PAWN, 1, 50, 0, CHESSBOARD_OFFSET_X + 70, CHESSBOARD_OFFSET_Y + 10);
-	//Black pieces
+
+	//White pieces
 	init_chess_piece(&(gs->white_pieces[0]), WHITE, KING, 0, 0, 10, CHESSBOARD_OFFSET_X + 40, CHESSBOARD_OFFSET_Y + CHESSBOARD - 10);
 	init_chess_piece(&(gs->white_pieces[1]), WHITE, QUEEN, 5, 10, 10, CHESSBOARD_OFFSET_X + 30, CHESSBOARD_OFFSET_Y + CHESSBOARD - 10);
 	init_chess_piece(&(gs->white_pieces[2]), WHITE, ROOK, 4, 20, 10, CHESSBOARD_OFFSET_X, CHESSBOARD_OFFSET_Y + CHESSBOARD - 10);
