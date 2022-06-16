@@ -286,11 +286,11 @@ int main(void) {
 		// Draw in buffer while it is in VSync.
 		draw_sprite(background_sprites__p, SCREEN_RGB333_W, SCREEN_RGB333_H, 0, 0, 0, 0, background_sprites__w);
 		
-		draw_sprite(green_0__p, 10, 20, 121, 30, 0, 0, GREEN_W);
-		draw_sprite(green_0__p, 10, 20, 132, 30, 0, 0, GREEN_W);
+		draw_sprite(green0__p, 10, 20, 121, 30, 0, 0, GREEN_W);
+		draw_sprite(green0__p, 10, 20, 132, 30, 0, 0, GREEN_W);
 
-		draw_sprite(green_0__p, 10, 20, 121, 90, 0, 0, GREEN_W);
-		draw_sprite(green_0__p, 10, 20, 132, 90, 0, 0, GREEN_W);
+		draw_sprite(green0__p, 10, 20, 121, 90, 0, 0, GREEN_W);
+		draw_sprite(green0__p, 10, 20, 132, 90, 0, 0, GREEN_W);
 
 		//draw_chessboard(gs->color); TODO remove this function as chessboard is already drawn on the sprite.
 #if TWO_PLAYER
