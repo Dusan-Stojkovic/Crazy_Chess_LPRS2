@@ -7,7 +7,6 @@
 #include "system.h"
 #include "chesspieces.h"
 #include "background.h"
-#include "spawn_border.h"
 #include "chess_logic.h"
 #include "joystick.h"
 #include "emulator.h"
@@ -287,13 +286,13 @@ int main(void) {
 		// Draw in buffer while it is in VSync.
 		draw_sprite(background_sprites__p, SCREEN_RGB333_W, SCREEN_RGB333_H, 0, 0, 0, 0, background_sprites__w);
 		
-		draw_sprite(spawn_border__p, 20, 20, 95, 30, 0, 0, spawn_border__w);
-		draw_sprite(spawn_border__p, 20, 20, 95, 90, 0, 0, spawn_border__w);
+		draw_sprite(green_0__p, 10, 20, 121, 30, 0, 0, GREEN_W);
+		draw_sprite(green_0__p, 10, 20, 132, 30, 0, 0, GREEN_W);
 
-		draw_sprite(green_0__p, 10, 20, 120, 20, 0, 0, GREEN_W);
-		draw_sprite(green_0__p, 10, 20, 135, 20, 0, 0, GREEN_W);
+		draw_sprite(green_0__p, 10, 20, 121, 90, 0, 0, GREEN_W);
+		draw_sprite(green_0__p, 10, 20, 132, 90, 0, 0, GREEN_W);
 
-		draw_chessboard(gs->color);
+		//draw_chessboard(gs->color); TODO remove this function as chessboard is already drawn on the sprite.
 #if TWO_PLAYER
 		draw_player_cursor(gs->p1, 0x000f);
 		if(show_pool_white)
