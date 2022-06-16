@@ -53,6 +53,7 @@ void draw_background()
 	}
 }
 
+//old code
 void draw_chessboard(uint16_t color)
 {
 	// Draw black/white checkboard

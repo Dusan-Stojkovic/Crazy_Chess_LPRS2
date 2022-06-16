@@ -154,17 +154,10 @@ int main(void) {
 			//Spawn mode turned on
 			if(c)
 			{
-				if(pool_size_white == 0)
+				if(pool_size_white == 0 && score_white > 0)
 				{
 					show_pool_white = 1;
 					pool_size_white = spawn_pool(&spawn_white, WHITE, &score_white);
-					if(pool_size_white == 0)
-					{
-
-						pool_select_white = 0;
-						show_pool_white = 0;
-						free(spawn_white);
-					}
 				}
 				else
 				{
@@ -245,16 +238,10 @@ int main(void) {
 			}
 			if(joypad.start)
 			{
-				if(pool_size_black == 0)
+				if(pool_size_black == 0 && score_black > 0)
 				{
 					show_pool_black = 1;
 					pool_size_black = spawn_pool(&spawn_black, BLACK, &score_black);
-					if(pool_size_black == 0)
-					{
-						pool_select_black = 0;
-						show_pool_black = 0;
-						free(spawn_black);
-					}
 				}
 				else
 				{
@@ -286,11 +273,11 @@ int main(void) {
 		// Draw in buffer while it is in VSync.
 		draw_sprite(background_sprites__p, SCREEN_RGB333_W, SCREEN_RGB333_H, 0, 0, 0, 0, background_sprites__w);
 		
-		draw_sprite(green0__p, 10, 20, 121, 30, 0, 0, GREEN_W);
-		draw_sprite(green0__p, 10, 20, 132, 30, 0, 0, GREEN_W);
+		draw_sprite(green__p[score_black / 10], 10, 20, 121, 30, 0, 0, GREEN_W);
+		draw_sprite(green__p[score_black % 10], 10, 20, 132, 30, 0, 0, GREEN_W);
 
-		draw_sprite(green0__p, 10, 20, 121, 90, 0, 0, GREEN_W);
-		draw_sprite(green0__p, 10, 20, 132, 90, 0, 0, GREEN_W);
+		draw_sprite(green__p[score_white / 10], 10, 20, 121, 90, 0, 0, GREEN_W);
+		draw_sprite(green__p[score_white % 10], 10, 20, 132, 90, 0, 0, GREEN_W);
 
 		//draw_chessboard(gs->color); TODO remove this function as chessboard is already drawn on the sprite.
 #if TWO_PLAYER
