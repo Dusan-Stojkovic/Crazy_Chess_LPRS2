@@ -139,6 +139,11 @@ int piece_combat(chess_piece_t* attacker, chess_piece_t* defender, int attack_i,
 			//TODO figure out how to deallocate p and enemy
 			if(attacker[attack_i].h == defender[i].h)
 			{
+				if(attack_i == 0)
+				{
+					//The king is dead!
+					return -10;
+				}
 				//deallocate attacker, add score to attacker 
 				score = defender[i].t;
 				defender[i].h = 1;
@@ -158,6 +163,11 @@ int piece_combat(chess_piece_t* attacker, chess_piece_t* defender, int attack_i,
 			}
 			else
 			{
+				if(i == 0)
+				{
+					//The king is dead!
+					return 10;
+				}
 				//deallocate defender, add score to attacker
 				score = defender[i].t;
 				attacker[attack_i].h -= defender[i].h;
@@ -230,7 +240,7 @@ game_state_t* setup_game()
 
 	//Init chesspieces
 	//Black pieces
-	init_chess_piece(&(gs->black_pieces[0]), BLACK, KING, 0, 0, 0, CHESSBOARD_OFFSET_X + 40, CHESSBOARD_OFFSET_Y);
+	init_chess_piece(&(gs->black_pieces[0]), BLACK, KING, 10, 0, 0, CHESSBOARD_OFFSET_X + 40, CHESSBOARD_OFFSET_Y);
 	init_chess_piece(&(gs->black_pieces[1]), BLACK, QUEEN, 5, 10, 0, CHESSBOARD_OFFSET_X + 30, CHESSBOARD_OFFSET_Y);
 	init_chess_piece(&(gs->black_pieces[2]), BLACK, ROOK, 4, 20, 0, CHESSBOARD_OFFSET_X, CHESSBOARD_OFFSET_Y);
 	init_chess_piece(&(gs->black_pieces[3]), BLACK, ROOK, 4, 20, 0, CHESSBOARD_OFFSET_X + CHESSBOARD - 10, CHESSBOARD_OFFSET_Y);
@@ -248,7 +258,7 @@ game_state_t* setup_game()
 	init_chess_piece(&(gs->black_pieces[15]), BLACK, PAWN, 1, 50, 0, CHESSBOARD_OFFSET_X + 70, CHESSBOARD_OFFSET_Y + 10);
 
 	//White pieces
-	init_chess_piece(&(gs->white_pieces[0]), WHITE, KING, 0, 0, 10, CHESSBOARD_OFFSET_X + 40, CHESSBOARD_OFFSET_Y + CHESSBOARD - 10);
+	init_chess_piece(&(gs->white_pieces[0]), WHITE, KING, 10, 0, 10, CHESSBOARD_OFFSET_X + 40, CHESSBOARD_OFFSET_Y + CHESSBOARD - 10);
 	init_chess_piece(&(gs->white_pieces[1]), WHITE, QUEEN, 5, 10, 10, CHESSBOARD_OFFSET_X + 30, CHESSBOARD_OFFSET_Y + CHESSBOARD - 10);
 	init_chess_piece(&(gs->white_pieces[2]), WHITE, ROOK, 4, 20, 10, CHESSBOARD_OFFSET_X, CHESSBOARD_OFFSET_Y + CHESSBOARD - 10);
 	init_chess_piece(&(gs->white_pieces[3]), WHITE, ROOK, 4, 20, 10, CHESSBOARD_OFFSET_X + CHESSBOARD - 10, CHESSBOARD_OFFSET_Y + CHESSBOARD - 10);

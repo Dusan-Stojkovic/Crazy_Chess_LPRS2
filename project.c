@@ -92,8 +92,6 @@ int main(void) {
 	int pickup_piece_black = -1;
 	point_t pos_prev_black;
 
-	int frame_counter = 0;
-
 	while(1){
 #if TWO_PLAYER
 		shield_input(&joystick, device);	
@@ -157,12 +155,19 @@ int main(void) {
 					show_pool_white = 0;
 					pool_size_white = -1;
 					free(spawn_white);
+					pickup_piece_white = white_num - 1;
 				}
 			}
 		}
+
 		score = piece_combat(gs->white_pieces, gs->black_pieces, pickup_piece_white, &white_num, &black_num);
 		if(score > 0)
 		{
+			if(score == 10)
+			{
+				printf("Game over, white wins!\n");
+				break;
+			}
 			score_white += score;
 			printf("Updated score for white to: %i\n", score_white);
 			pos_prev_white = (point_t){ 0, 0 };
@@ -170,6 +175,11 @@ int main(void) {
 		}
 		else if(score < 0)
 		{
+			if(score == -10)
+			{
+				printf("Game over, black wins!\n");
+				break;
+			}
 			score_black -= score;
 			printf("Updated score for black to: %i\n", score_black);
 			pos_prev_white = (point_t){ 0, 0 };
@@ -231,12 +241,18 @@ int main(void) {
 					show_pool_black = 0;
 					pool_size_black = 0;
 					free(spawn_black);
+					pickup_piece_black = black_num - 1;
 				}
 			}
 		}
 		score = piece_combat(gs->black_pieces, gs->white_pieces, pickup_piece_black, &black_num, &white_num);
 		if(score > 0)
 		{
+			if(score == 10)
+			{
+				printf("Game over, black wins!\n");
+				break;
+			}
 			score_black += score;
 			printf("Updated score for black to: %i\n", score_black);
 			pos_prev_black = (point_t){ 0, 0 };
@@ -244,6 +260,11 @@ int main(void) {
 		}
 		else if(score < 0)
 		{
+			if(score == -10)
+			{
+				printf("Game over, white wins!\n");
+				break;
+			}
 			score_white -= score;
 			printf("Updated score for white to: %i\n", score_white);
 			pos_prev_black = (point_t){ 0, 0 };
@@ -298,8 +319,9 @@ int main(void) {
 		}
 	}
 
+	while(joypad.start == 0);
 	free(gs);
-
+	close(device);
 	return 0;
 }
 
