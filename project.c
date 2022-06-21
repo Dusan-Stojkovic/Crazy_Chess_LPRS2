@@ -42,8 +42,8 @@ int main(void) {
 
 	do
 	{
-		gs = setup_game();
 		free(gs);
+		gs = setup_game();
 	}while(start_menu(gs));
 
 	int start_menu(game_state_t* gs)
