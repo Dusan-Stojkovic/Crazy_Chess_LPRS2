@@ -218,8 +218,8 @@ game_state_t* setup_game()
 {
 	game_state_t* gs;
 	gs = (game_state_t*) calloc(1, sizeof(game_state_t));
-	gs->white_pieces = (chess_piece_t*) calloc(PIECE_NUM / 2, sizeof(chess_piece_t));
-	gs->black_pieces = (chess_piece_t*) calloc(PIECE_NUM / 2, sizeof(chess_piece_t));
+	gs->white_pieces = (chess_piece_t*) calloc(PIECE_NUM_MAX / 2, sizeof(chess_piece_t));
+	gs->black_pieces = (chess_piece_t*) calloc(PIECE_NUM_MAX / 2, sizeof(chess_piece_t));
 	gs->color = 0xfff; // for white
 
 	gs->p1.x = 80;

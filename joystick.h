@@ -43,6 +43,7 @@ int set_interface_attribs (int fd, int speed, int parity)
 
 void shield_input(joystick_t* joystick, int device)
 {
+	static joystick_t shadow_joystick = (joystick_t){0, 0, 0, 0};
 	tcflush(device, TCIFLUSH);
 
 	int size = sizeof(joystick_t);
@@ -80,7 +81,51 @@ void shield_input(joystick_t* joystick, int device)
 		int n = read(device, &bit, 1);
 		bits[valid++] = bit;
 	}
-}
 
+	//Setup our state machine for falling edge detection
+	auto int update_key_state(int, int);
+	int update_key_state(int key, int shadow_key)
+	{
+		//Start
+		if(key == 0 && shadow_key == 0)
+		{
+			return 0;
+		}
+		//faling edge
+		else if(key == 0 && shadow_key == 1)
+		{
+			return 1;
+		}
+		//rising edge
+		else if(key == 1 && shadow_key == 0)
+		{
+			return 2;
+		}
+		//keep 
+		return 3;
+	}
+
+	uint8_t update = 0;
+	uint8_t mask = 0x01;
+	for(int i = 0; i < 4; i++)
+	{
+		update = update_key_state((joystick->buttons & mask) >> i, (shadow_joystick.buttons & mask) >> i);
+		if(update == 2)
+		{
+			shadow_joystick.buttons |= mask;	
+			joystick->buttons &= ~mask;
+		}
+		else if(update == 1)
+		{
+			joystick->buttons |= mask;
+			shadow_joystick.buttons &= ~mask;	
+		}
+		else if(update == 3)
+		{
+			joystick->buttons &= ~mask;
+		}
+		mask = mask << 1;
+	}
+}
 
 #endif

@@ -37,11 +37,58 @@ typedef struct {
 } bf_joypad;
 
 #define joypad (*((volatile bf_joypad*)LPRS2_JOYPAD_BASE))
+#define joy_bits (*((volatile uint8_t*)LPRS2_JOYPAD_BASE))
 
 typedef struct {
 	uint32_t m[SCREEN_IDX1_H][SCREEN_IDX1_W];
 } bf_unpack_idx1;
 #define unpack_idx1 (*((volatile bf_unpack_idx1*)unpack_idx1_p32))
+
+uint8_t keyboard_input()
+{
+	static uint8_t shadow = 0;
+
+	auto int update_key_state(int, int);
+	int update_key_state(int key, int shadow_key)
+	{
+		//Start
+		if(key == 0 && shadow_key == 0)
+		{
+			return 0;
+		}
+		//faling edge
+		else if(key == 0 && shadow_key == 1)
+		{
+			return 1;
+		}
+		//rising edge
+		else if(key == 1 && shadow_key == 0)
+		{
+			return 2;
+		}
+		//keep 
+		return 3;
+	}
+
+	uint8_t toggle = 0;
+	uint8_t update = 0;
+	uint8_t mask = 0x01;
+	for(int i = 0; i < 4; i++)
+	{
+		update = update_key_state((joy_bits & mask) >> i, (shadow & mask) >> i);
+		if(update == 2)
+		{
+			shadow |= mask;	
+		}
+		else if(update == 1)
+		{
+			toggle |= mask;
+			shadow &= ~mask;	
+		}
+		mask = mask << 1;
+	}
+	return toggle;
+}
 
 void draw_background()
 {

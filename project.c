@@ -20,7 +20,6 @@
 int main(void) {
 ////////////////////////////////////////////////////////////////////////////////
 // Setup.
-
 #if TWO_PLAYER
 	int device = open("/dev/ttyUSB0", O_RDWR | O_NONBLOCK | O_NOCTTY);
  	
@@ -60,6 +59,11 @@ int main(void) {
 	uint8_t show_pool_black = 0;
 	uint8_t pool_size_black = 0;
 	chess_piece_t *spawn_black = NULL;
+	uint8_t keyboard_toggle = 0;
+	uint8_t key_a = 0;
+	uint8_t key_b = 0;
+	uint8_t key_z = 0;
+	uint8_t key_start = 0;
 
 	int pickup_piece_black = -1;
 	point_t pos_prev_black;
@@ -76,8 +80,8 @@ int main(void) {
 		//temporarily
 		//TODO this can be solved by adding falling edge mechanism
 		//similar to the one I used in the begining
-		if(frame_counter == 5)
-		{
+		//if(frame_counter == 5)
+		//{
 			/////////////////////////////////////
 			// Poll controls.
 #if TWO_PLAYER
@@ -137,22 +141,6 @@ int main(void) {
 				pos_prev_white = gs->p1;
 			}
 
-			score = piece_combat(gs->white_pieces, gs->black_pieces, pickup_piece_white, &white_num, &black_num);
-			if(score > 0)
-			{
-				score_white += score;
-				printf("Updated score for white to: %i\n", score_white);
-				pos_prev_white = (point_t){ 0, 0 };
-				pickup_piece_white = -1;
-			}
-			else if(score < 0)
-			{
-				score_black -= score;
-				printf("Updated score for black to: %i\n", score_black);
-				pos_prev_white = (point_t){ 0, 0 };
-				pickup_piece_white = -1;
-			}
-
 			//Spawn mode turned on
 			if(c)
 			{
@@ -183,12 +171,31 @@ int main(void) {
 					}
 				}
 			}
-
+			score = piece_combat(gs->white_pieces, gs->black_pieces, pickup_piece_white, &white_num, &black_num);
+			if(score > 0)
+			{
+				score_white += score;
+				printf("Updated score for white to: %i\n", score_white);
+				pos_prev_white = (point_t){ 0, 0 };
+				pickup_piece_white = -1;
+			}
+			else if(score < 0)
+			{
+				score_black -= score;
+				printf("Updated score for black to: %i\n", score_black);
+				pos_prev_white = (point_t){ 0, 0 };
+				pickup_piece_white = -1;
+			}
 			if(d)
 			{
 				pool_select_white = ++pool_select_white > pool_size_white ? 0 : pool_select_white;
 			}
 #endif
+			keyboard_toggle = keyboard_input();
+			key_a = keyboard_toggle & 1;
+			key_b = (keyboard_toggle & 2) >> 1;
+			key_z = (keyboard_toggle & 4) >> 2;
+			key_start = (keyboard_toggle & 8) >> 3;
 
 			mov_x = 0;
 			mov_y = 0;
@@ -213,18 +220,18 @@ int main(void) {
 
 			update_cursor(&(gs->p2), mov_x, mov_y);
 
-			if(pickup_piece(joypad.a, gs->black_pieces, black_num, &(gs->p2), &pickup_piece_black))
+			if(pickup_piece(key_a, gs->black_pieces, black_num, &(gs->p2), &pickup_piece_black))
 			{
 				pos_prev_black = gs->p2;
 			}
 
-			if(overlap_piece(joypad.a, gs->black_pieces, black_num, pickup_piece_black))
+			if(overlap_piece(key_a, gs->black_pieces, black_num, pickup_piece_black))
 			{
 				printf("Invalid move, pieces can't overlap.\n");
 				gs->black_pieces[pickup_piece_black].pos= pos_prev_black;
 				gs->p2 = pos_prev_black;
 			}
-			else if(joypad.z && pickup_piece_black > -1)
+			else if(key_z && pickup_piece_black > -1)
 			{
 				pos_prev_black = (point_t){ 0, 0 };
 				pickup_piece_black = -1;
@@ -234,22 +241,7 @@ int main(void) {
 				pos_prev_black = gs->p2;
 			}
 			
-			score = piece_combat(gs->black_pieces, gs->white_pieces, pickup_piece_black, &black_num, &white_num);
-			if(score > 0)
-			{
-				score_black += score;
-				printf("Updated score for black to: %i\n", score_black);
-				pos_prev_black = (point_t){ 0, 0 };
-				pickup_piece_black = -1;
-			}
-			else if(score < 0)
-			{
-				score_white -= score;
-				printf("Updated score for white to: %i\n", score_white);
-				pos_prev_black = (point_t){ 0, 0 };
-				pickup_piece_black = -1;
-			}
-			if(joypad.start)
+			if(key_start)
 			{
 				if(show_pool_black == 0 && score_black > 0)
 				{
@@ -276,15 +268,31 @@ int main(void) {
 					}
 				}
 			}
+			score = piece_combat(gs->black_pieces, gs->white_pieces, pickup_piece_black, &black_num, &white_num);
+			if(score > 0)
+			{
+				score_black += score;
+				printf("Updated score for black to: %i\n", score_black);
+				pos_prev_black = (point_t){ 0, 0 };
+				pickup_piece_black = -1;
+			}
+			else if(score < 0)
+			{
+				score_white -= score;
+				printf("Updated score for white to: %i\n", score_white);
+				pos_prev_black = (point_t){ 0, 0 };
+				pickup_piece_black = -1;
+			}
 
-			if(joypad.b)
+			if(key_b)
 			{
 				pool_select_black = ++pool_select_black > pool_size_black ? 0 : pool_select_black;
 			}
-			frame_counter = 0;
-		}
+			//frame_counter = 0;
+		//}
 
-		frame_counter++;
+		//frame_counter++;
+
 		/////////////////////////////////////
 		// Drawing.
 		
