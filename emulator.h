@@ -120,12 +120,12 @@ void draw_chessboard(uint16_t color)
 	}
 }
 
-void draw_player_cursor(point_t p, uint16_t color)
+void draw_player_cursor(point_t p, uint16_t color, int w, int h, int t)
 {
 	// Draw cursor
-	for(uint16_t r = p.y; r < p.y + SQ_A; r++){
-		for(uint16_t c = p.x; c < p.x + SQ_A; c++){
-			if((r - p.y) < 1 || (c - p.x) < 1 || (r - p.y) > 8 || (c - p.x) > 8)
+	for(uint16_t r = p.y; r < p.y + h; r++){
+		for(uint16_t c = p.x; c < p.x + w; c++){
+			if((r - p.y) < t || (c - p.x) < t || (r - p.y) > h - t - 1 || (c - p.x) > w - t - 1)
 				unpack_rgb333_p32[r*SCREEN_RGB333_W + c] = color;
 		}
 	}

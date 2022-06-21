@@ -232,11 +232,11 @@ game_state_t* setup_game()
 	gs->black_pieces = (chess_piece_t*) calloc(PIECE_NUM_MAX / 2, sizeof(chess_piece_t));
 	gs->color = 0xfff; // for white
 
-	gs->p1.x = 80;
-	gs->p1.y = 100;
+	gs->p1.x = 0;
+	gs->p1.y = 0;
 
-	gs->p2.x = 80;
-	gs->p2.y = 30;
+	gs->p2.x = 0;
+	gs->p2.y = 0;
 
 	//Init chesspieces
 	//Black pieces
