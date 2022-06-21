@@ -20,7 +20,7 @@
 // Game data structures.
 
 typedef enum {
-	KING = 1,
+	KING = 10,
 	QUEEN = 5,
 	ROOK = 4,
 	BISHOP = 3,
