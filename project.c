@@ -74,6 +74,8 @@ int main(void) {
 		//I think that we sould update button logic each frame
 		//but slow down the movement with the frame counter 
 		//temporarily
+		//TODO this can be solved by adding falling edge mechanism
+		//similar to the one I used in the begining
 		if(frame_counter == 5)
 		{
 			/////////////////////////////////////
@@ -154,20 +156,31 @@ int main(void) {
 			//Spawn mode turned on
 			if(c)
 			{
-				if(pool_size_white == 0 && score_white > 0)
+				if(show_pool_white == 0 && score_white > 0)
 				{
 					show_pool_white = 1;
 					pool_size_white = spawn_pool(&spawn_white, WHITE, &score_white);
+					pool_size_white--;
 				}
-				else
+				else if(show_pool_white)
 				{
-					score_white -= spawn_white[pool_select_white].t;	
-					spawn_white[pool_select_white].pos = gs->p1;
-					gs->white_pieces[white_num++] = spawn_white[pool_select_white];
-					pool_select_white = 0;
-					show_pool_white = 0;
-					pool_size_white = 0;
-					free(spawn_white);
+					//Try to append new piece to array
+					gs->white_pieces[white_num] = spawn_white[pool_select_white];
+					gs->white_pieces[white_num++].pos = gs->p1;
+					if(overlap_piece(0, gs->white_pieces, white_num, white_num - 1))
+					{
+						printf("Invalid spawn spot, pieces can't overlap.\n");
+						white_num--;
+					}
+					//TODO think about adding piece combat to spawn
+					else
+					{
+						score_white -= spawn_white[pool_select_white].t;	
+						pool_select_white = 0;
+						show_pool_white = 0;
+						pool_size_white = -1;
+						free(spawn_white);
+					}
 				}
 			}
 
@@ -238,20 +251,29 @@ int main(void) {
 			}
 			if(joypad.start)
 			{
-				if(pool_size_black == 0 && score_black > 0)
+				if(show_pool_black == 0 && score_black > 0)
 				{
 					show_pool_black = 1;
 					pool_size_black = spawn_pool(&spawn_black, BLACK, &score_black);
+					pool_size_black--;
 				}
-				else
+				else if(show_pool_black)
 				{
-					score_black -= spawn_black[pool_select_black].t;	
-					spawn_black[pool_select_black].pos = gs->p2;
-					gs->black_pieces[black_num++] = spawn_black[pool_select_black];
-					pool_select_black = 0;
-					show_pool_black = 0;
-					pool_size_black = 0;
-					free(spawn_black);
+					gs->black_pieces[black_num] = spawn_black[pool_select_black];
+					gs->black_pieces[black_num++].pos = gs->p2;
+					if(overlap_piece(0, gs->black_pieces, black_num, black_num - 1))
+					{
+						printf("Invalid spawn spot, pieces can't overlap.\n");
+						black_num--;
+					}
+					else
+					{
+						score_black -= spawn_black[pool_select_black].t;	
+						pool_select_black = 0;
+						show_pool_black = 0;
+						pool_size_black = 0;
+						free(spawn_black);
+					}
 				}
 			}
 

@@ -174,11 +174,11 @@ int piece_combat(chess_piece_t* attacker, chess_piece_t* defender, int attack_i,
 int spawn_pool(chess_piece_t** pool, color_type c, int *cash)
 {
 	uint8_t offset = 0;
-	uint8_t pool_y = CHESSBOARD_OFFSET_Y; 
+	uint8_t pool_y = CHESSBOARD_OFFSET_Y + 5; 
 	if(c == WHITE)
 	{
 		offset = 10;	
-		pool_y = CHESSBOARD_OFFSET_Y + CHESSBOARD - 10;
+		pool_y = CHESSBOARD_OFFSET_Y + CHESSBOARD - 15;
 	}
 
 	*pool = (chess_piece_t*) calloc(POOL_SIZE, sizeof(chess_piece_t));
@@ -190,7 +190,7 @@ int spawn_pool(chess_piece_t** pool, color_type c, int *cash)
 	init_chess_piece(&((*pool)[4]), c, QUEEN, 5, 10, offset, SPAWN_POOL, pool_y);
 
 	int i = 0;
-	for(i = 0; i < QUEEN - 1; i++)
+	for(i = 1; i <= QUEEN; i++)
 	{
 		if(i == *cash)
 		{
