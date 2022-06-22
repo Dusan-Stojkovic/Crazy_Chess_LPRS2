@@ -23,7 +23,7 @@
 #include <sys/time.h>
 
 //Change this to 0 if no Nokia 5110 shield is available
-#define TWO_PLAYER 1
+#define TWO_PLAYER 0
 #define PERIOD 125000 //us
 
 game_state_t* gs;
@@ -452,9 +452,11 @@ int main(void) {
 				draw_sprite(chess_sprites__p, 10, 10, spawn_black[pool_select_black].pos.x, spawn_black[pool_select_black].pos.y, spawn_black[pool_select_black].atlas.x, spawn_black[pool_select_black].atlas.y, chess_sprites__w);
 			}
 		}
-
   		timer.it_interval.tv_usec = 0; 
+
+#if TWO_PLAYER
 		close(device);
+#endif
 		return score;
 	}
 
@@ -464,10 +466,9 @@ int main(void) {
 
 void update_movement(int signum)
 {
-#if TWO_PLAYER
 	int mov_x = 0;
 	int mov_y = 0;
-
+#if TWO_PLAYER
 	// ADC logic 
 	if(joystick.x < -THRESHOLD)
 	{
